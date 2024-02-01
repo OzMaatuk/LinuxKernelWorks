@@ -105,11 +105,11 @@ sudo update-grub
 Create a new directory for your module:
 
 ```bash
-mkdir linux_mainline/custome_module
-cd linux_mainline/custome_module
+mkdir linux_mainline/custom_module
+cd linux_mainline/custom_module
 ```
 
-In the new module directory, create a code file named `custome_module.c`:
+In the new module directory, create a code file named `custom_module.c`:
 
 ```c
 #include <linux/module.h>       /* Needed by all modules */
@@ -118,7 +118,7 @@ In the new module directory, create a code file named `custome_module.c`:
 
 static int __init hello_start(void)
 {
-printk(KERN_INFO "Loading custome module...\n");
+printk(KERN_INFO "Loading custom module...\n");
 printk(KERN_INFO "Hello world\n");
 return 0;
 }
@@ -135,7 +135,7 @@ module_exit(hello_end);
 Create a `Makefile`:
 
 ```bash
-obj-$(CONFIG_CUSTOME_MODULE) = custome_module.o
+obj-$(CONFIG_CUSTOM_MODULE) = custom_module.o
 KVERSION = $(shell uname -r)
 all:
         make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
@@ -149,7 +149,7 @@ clean:
 Create a `Kconfig` file:
 
 ```bash
-menuconfig CUSTOME_CONFIG
+menuconfig CUSTOM_CONFIG
         tristate "Linux custom module"
 		default y
 ```
@@ -171,7 +171,7 @@ sudo make modules_install M=path/to/your/module/directory
 Load the module:
 
 ```bash
-sudo modprobe -f custome_module
+sudo modprobe -f custom_module
 ```
 
 Check the loaded modules and kernel messages:
@@ -181,9 +181,9 @@ lsmod | head
 dmesg | tail
 ```
 
-Add the module to the kernel configuration. In the kernel top directory, edit the `.config` file by adding the `CONFIG_CUSTOME_MODULE=y` line.
+Add the module to the kernel configuration. In the kernel top directory, edit the `.config` file by adding the `CONFIG_CUSTOM_MODULE=y` line.
 
-Edit the `Kconfig` file by adding the `source "custome_module/Kconfig"` line.
+Edit the `Kconfig` file by adding the `source "custom_module/Kconfig"` line.
 
 Sure, here's a revised version of your instructions with additional explanations and Markdown formatting:
 
@@ -194,7 +194,7 @@ Follow these steps to add a new module to the kernel configuration:
 1. **Edit the .config File**: In the kernel top directory, open the `.config` file and add the following line:
 
 ```bash
-CONFIG_CUSTOME_MODULE=y
+CONFIG_CUSTOM_MODULE=y
 ```
 
 This line tells the kernel to include your custom module as a built-in module.
@@ -202,7 +202,7 @@ This line tells the kernel to include your custom module as a built-in module.
 2. **Edit the Kconfig File**: In the same directory, open the `Kconfig` file and add the following line:
 
 ```bash
-source "custome_module/Kconfig"
+source "custom_module/Kconfig"
 ```
 
 This line tells the kernel build system to include the `Kconfig` file from your custom module's directory.
@@ -210,7 +210,7 @@ This line tells the kernel build system to include the `Kconfig` file from your 
 3. **Edit the Makefile**: Open the `Makefile` in the same directory and add the following line:
 
 ```bash
-obj-$(CONFIG_CUSTOME_MODULE) += custome_module/
+obj-$(CONFIG_CUSTOM_MODULE) += custom_module/
 ```
 
 This line tells the kernel build system to descend into your custom module's directory when building the kernel.
