@@ -1,0 +1,135 @@
+sudo apt-get install build-essential vim git git-email cscope libncurses-dev libssl-dev bison flex git-email pahole util-linux kmod e2fsprogs jfsutils reiserfsprogs xfsprogs squashfs-tools btrfs-progs pcmciautils quota ppp mount procps udev iptables openssl libssl-dev bc cpio tar libelf-dev grub2
+
+[user]
+	name = 
+	email=
+[format]
+	signoff=true
+[core]
+	editor=vim
+[sendemail]
+	smptserver=smtp.gmail.com
+	smtpserverport=587
+	smtpencryption=tls
+	smptuser=
+	smtppass=
+
+
+git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux_mainline
+
+cd linux_mainline
+
+cp /boot/config .config
+
+make oldconfig
+
+make -j6 all
+
+su -c "make modules_install install"
+
+dmesg -t > dmesg_current
+dmesg -t -k > dmesg_kernel
+dmesg -t -l emerg > dmesg_current_emerg
+dmesg -t -l alert > dmesg_current_alert
+dmesg -t -l crit > dmesg_current_crit
+dmesg -t -l err > dmesg_current_err
+dmesg -t -l warn > dmesg_current_warn
+dmesg -t -l info > dmesg_current_info
+
+git checkout -b work
+
+Uncomment GRUB_TIMEOUT and set it to 10: GRUB_TIMEOUT=10
+Comment out GRUB_TIMEOUT_STYLE=hidden
+GRUB_CMDLINE_LINUX="earlyprintk=vga"
+sudo update-grub
+
+
+new module:
+
+mkdir <custome_linux_kernel_path/custome_module
+cd <custome_linux_kernel_path/custome_module
+
+in the new module directory:
+
+creating code file custome_module.c:
+
+-----------------------------------------------------------------------
+
+#include <linux/module.h>       /* Needed by all modules */
+#include <linux/kernel.h>       /* Needed for KERN_INFO */
+#include <linux/init.h>         /* Needed for the macros */
+
+static int __init hello_start(void)
+{
+printk(KERN_INFO "Loading custome module...\n");
+printk(KERN_INFO "Hello world\n");
+return 0;
+}
+
+static void __exit hello_end(void)
+{
+printk(KERN_INFO "Goodbye Mr.\n");
+}
+
+module_init(hello_start);
+module_exit(hello_end);
+
+-----------------------------------------------------------------------
+
+creating Makefile:
+
+-----------------------------------------------------------------------
+
+obj-$(CONFIG_CUSTOME_MODULE) = custome_module.o
+KVERSION = $(shell uname -r)
+all:
+        make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
+install: all
+        make -C /lib/modules/$(KVERSION)/build M=$(PWD) install_modules
+clean:
+        make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
+.PHONY: all install clean
+
+-----------------------------------------------------------------------
+
+creating Kconfig file:
+
+-----------------------------------------------------------------------
+
+menuconfig CUSTOME_CONFIG
+        tristate "Linuz custome module"
+		default y
+
+-----------------------------------------------------------------------
+
+now, in the module directory, you can "make all" and "make install",
+or in the kernel top directory, you can "make" and "make modules_install"
+sudo modprobe -f custome_module
+lsmod | head
+dmesg | tail
+
+add to kernel config:
+in the krenel top directory:
+edit the ".config" file by adding the "CONFIG_CUSTOME_MODULE=y" line.
+edit the "Kconfig" file by adding the "source "custome_module/Kconfig"" line.
+edit the "Makefile" file by adding the "obj-$(CONFIG_CUSTOME_MODULE) += custome_module/" line.
+rebuild everything to be applied, "make oldconfig", "make -j all", "make modules_install".
+update grub with "update-grub".
+
+NOTE: This new module got top level subdirectory in out kernel directory, which is not common.
+	As you can see in other modules, each is at least seconf-level subdirectory in the kernel directory,
+	And this structure adds additional requierments got configuring new module.
+	Those additional steps are mostly editing the "Kconfig" and the "Makefiles" in all parent directories of the final level module directory.
+
+
+Edit existing module:
+
+Choose module from relevant list "lsmod".
+in the kernel top directory:
+find it's directory looking at the global Makefile "git grep <module_name> '*Makefile'".
+edit the related .c file of the .o file metioned in the Makefile.
+in the kernel top directory:
+compile and install the module by "make M=<path_to_module_directory>" and "make modules_install M=<path_to_module_directory>".
+OR
+compile and install the whole kernel with edited module by "make" and "make modules_install".
+restart the module with "sudo modprobe -f <module_name>", and check your change is applied with "dmesg".
